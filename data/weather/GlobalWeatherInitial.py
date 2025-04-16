@@ -1,0 +1,180 @@
+# import_data.py
+from datetime import datetime
+
+import pandas as pd
+
+from models.AirQuality import AirQuality
+from models.CelestialEvents import CelestialEvents
+from models.Location import Location
+from models.Precipitation import Precipitation
+from models.Temperature import Temperature
+from models.Weather import Weather
+from models.Wind import Wind
+
+
+def parse_time(time_str):
+    try:
+        return datetime.strptime(time_str, "%I:%M %p").time()
+    except:
+        return None
+
+
+def import_from_csv(csv_path, session):
+    try:
+        df = pd.read_csv(csv_path)
+        session = session()
+        
+        for _, row in df.iterrows():
+            try:
+                # Location
+                location = Location(
+                    country=row["country"],
+                    location_name=row["location_name"],
+                    latitude=row["latitude"],
+                    longitude=row["longitude"],
+                    timezone=row["timezone"],
+                )
+                session.add(location)
+
+                # CelestialEvents
+                celestial = CelestialEvents(
+                    sunrise=parse_time(row["sunrise"]),
+                    sunset=parse_time(row["sunset"]),
+                    moonrise=parse_time(row["moonrise"]),
+                    moonset=parse_time(row["moonset"]),
+                    moon_phase=row["moon_phase"],
+                    moon_illumination=row["moon_illumination"],
+                )
+                session.add(celestial)
+
+                # Wind
+                wind = Wind(
+                    wind_kph=row["wind_kph"],
+                    wind_degree=row["wind_degree"],
+                    wind_direction=row["wind_direction"],
+                )
+                session.add(wind)
+
+                # Temperature
+                temperature = Temperature(
+                    temperature_celsius=row["temperature_celsius"],
+                    temperature_fahrenheit=row["temperature_fahrenheit"],
+                )
+                session.add(temperature)
+
+                # Precipitation
+                precipitation = Precipitation(
+                    precip_mm=row["precip_mm"],
+                    humidity=row["humidity"],
+                    cloud=row["cloud"],
+                )
+                session.add(precipitation)
+
+                # AirQuality
+                air_quality = AirQuality(
+                    pressure_mb=row["pressure_mb"],
+                    visibility_km=row["visibility_km"],
+                    uv_index=row["uv_index"],
+                    air_quality_gb=row.get("air_quality_gb-defra-index", 0),
+                )
+                session.add(air_quality)
+
+                session.flush()
+
+                # Weather
+                weather = Weather(
+                    location_id=location.id,
+                    celestial_id=celestial.id,
+                    wind_id=wind.id,
+                    temperature_id=temperature.id,
+                    precipitation_id=precipitation.id,
+                    air_quality_id=air_quality.id,
+                    last_updated=datetime.strptime(
+                        row["last_updated"], "%Y-%m-%d %H:%M"
+                    ),
+                    should_go_out=True if row["uv_index"] < 5 else False,
+                )
+                session.add(weather)
+
+                
+                if _ % 1000 == 0:
+                    session.commit()
+                    if _ != 0:
+                        break
+
+            except Exception as e:
+                print(f"Error in row {_}: {e}")
+                session.rollback()
+
+        session.commit()
+    finally:
+        print("Ended....")
+
+
+# if __name__ == "__main__":
+#     import_from_csv("GlobalWeatherRepository.csv")
+
+
+# from models.base.base import Base, SessionLocal
+# from models.Location import Location
+# from models.Wind import Wind
+# from models.Weather import Weather
+# import csv
+
+# def add_initial_data():
+#     db = SessionLocal()
+
+#     try:
+#         with open("GlobalWeatherRepository.csv", mode='r', encoding='utf-8') as file:
+#             reader = csv.DictReader(file)
+
+#             for row in reader:
+#                 # Створення локації
+#                 location = Location(
+#                     country=row['country'],
+#                     location_name=row['location_name'],
+#                     latitude=float(row['latitude']),
+#                     longitude=float(row['longitude']),
+#                     timezone=row['timezone']
+#                 )
+#                 db.add(location)
+#                 db.flush()  # Отримуємо ID для використання в інших таблицях
+
+#                 # Створення запису про погоду
+#                 weather = Weather(
+#                     location_id=location.id,
+#                     last_updated=row['last_updated'],
+#                     temperature_celsius=float(row['temperature_celsius']),
+#                     # Додайте інші поля
+#                 )
+#                 db.add(weather)
+
+#                 # Створення запису про вітер
+#                 wind = Wind(
+#                     location_id=location.id,
+#                     wind_kph=float(row['wind_kph']),
+#                     wind_degree=int(row['wind_degree']),
+#                     wind_direction=row['wind_direction']
+#                     # Додайте інші поля
+#                 )
+#                 db.add(wind)
+
+#                 # Додайте інші моделі за аналогією
+
+#                 # Периодичне коміття для великих обсягів даних
+#                 if reader.line_num % 1000 == 0:
+#                     db.commit()
+#                     print(f"Imported {reader.line_num} rows")
+
+#             db.commit()
+#             print("Import completed successfully!")
+
+#     except Exception as e:
+#         db.rollback()
+#         print(f"Error occurred: {e}")
+#     finally:
+#         db.close()
+
+
+# if __name__ == "__main__":
+#     add_initial_data()

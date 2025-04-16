@@ -1,0 +1,13 @@
+postgres:
+  dbname: 
+  user: 
+  password: 
+  host: 
+  port: 
+
+mysql: 
+  dbname: 
+  user: 
+  password: 
+  host: 
+  port: 
