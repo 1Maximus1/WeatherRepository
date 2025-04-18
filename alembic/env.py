@@ -22,7 +22,7 @@ from infrastructure.postgres.base.base import Base
 target_metadata = Base.metadata
 print("Tables loaded in metadata:")
 print(Base.metadata.tables.keys())
-# Настройка логгирования
+
 config = context.config
 fileConfig(config.config_file_name)
 

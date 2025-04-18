@@ -6,7 +6,7 @@ services:
     container_name: weather_mysql
     environment:
       MYSQL_ROOT_PASSWORD: 
-      MYSQL_DATABASE: 
+      MYSQL_DATABASE:
       MYSQL_USER: 
       MYSQL_PASSWORD: 
     ports:

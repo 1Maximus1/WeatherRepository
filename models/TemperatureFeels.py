@@ -12,5 +12,6 @@ class TemperatureFeels(Base):
     temperature_celsius_feels = Column(Float)
     temperature_fahrenheit_feels = Column(Float)
 
-    temperatures = relationship("Temperature", back_populates="temperature_feels",cascade="all, delete-orphan")
-
+    temperatures = relationship(
+        "Temperature", back_populates="temperature_feels", cascade="all, delete-orphan"
+    )
